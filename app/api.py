@@ -1,3 +1,4 @@
+print(">>>> app/api.py is being loaded <<<<")
 import asyncio
 from fastapi import FastAPI, Request
 from app.agent.manus import Manus
