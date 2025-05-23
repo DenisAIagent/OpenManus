@@ -1,52 +1,52 @@
 import toml
 
-# Charge la config multi-LLM
-config = toml.load("config.toml")
+# Charge la configuration
+config = toml.load("config/config.multi-llm.toml")
 
+# Classe agent générique (à adapter pour les vrais appels API)
 class AgentLLM:
-    def __init__(self, conf):
+    def __init__(self, conf, name):
         self.model = conf["model"]
-        self.base_url = conf["base_url"]
-        self.api_key = conf["api_key"]
-        self.max_tokens = conf.get("max_tokens", 4096)
-        self.temperature = conf.get("temperature", 0.0)
-        # Ajoute ici la logique d'appel API selon le provider
+        self.name = name
 
     def run(self, prompt, context=None):
-        # Place ici la logique API pour chaque provider
-        # (ex: requests.post pour OpenAI, Anthropic, Google)
-        return f"[{self.model}] Réponse simulée à '{prompt}'"
+        # Ici tu branches l'appel API réel selon self.model
+        return f"[{self.name}] {self.model} répond à : {prompt}"
 
-# Instancie les agents
-agent_claude = AgentLLM(config["llm_claude"])
-agent_gemini = AgentLLM(config["llm_gemini"])
-agent_openai = AgentLLM(config["llm_openai"])
+# Instanciation des agents
+agent_claude = AgentLLM(config["llm_claude"], "Chef de projet")
+agent_gemini = AgentLLM(config["llm_gemini"], "Rédacteur/Reviewer")
+agent_openai = AgentLLM(config["llm_openai"], "Développeur")
 
-class TeamLeaderAgent:
-    def __init__(self, agents):
-        self.agents = agents
+# Fonction d'orchestration avec itérations automatiques
+def multi_agent_iteration(task, context, agents, n_iter=5):
+    print(f"Mission initiale : {task}\n")
+    # 1ère version par le chef de projet
+    output = agents["chef"].run(task, context)
+    print(f"Version 1 (Chef de projet) :\n{output}\n")
+    for i in range(2, n_iter + 1):
+        # Reviewer (Gemini) critique/améliore
+        critique = agents["reviewer"].run(
+            f"Voici la version actuelle : {output}\nPropose des améliorations ou corrige les erreurs.", context)
+        print(f"Feedback {i-1} (Reviewer) :\n{critique}\n")
+        # Spécialiste (OpenAI) applique les suggestions
+        output = agents["specialist"].run(
+            f"Améliore ce livrable selon ces suggestions : {critique}", context)
+        print(f"Version {i} (Spécialiste) :\n{output}\n")
+    print("Livrable final :\n" + output)
+    return output
 
-    def dispatch(self, task, context=None):
-        # Logique simple d'aiguillage (à personnaliser selon ton besoin)
-        task_lower = task.lower()
-        if "newsletter" in task_lower or "contenu" in task_lower:
-            return self.agents["gemini"].run(task, context)
-        elif "code" in task_lower or "développement" in task_lower:
-            return self.agents["openai"].run(task, context)
-        else:
-            # Pour une mission complexe, découpage et dispatch
-            return self.agents["claude"].run(f"Planifie et répartis la mission suivante : {task}", context)
-
-# Utilisation
-team_leader = TeamLeaderAgent({
-    "claude": agent_claude,
-    "gemini": agent_gemini,
-    "openai": agent_openai
-})
-
-# Exemple d'appel
 if __name__ == "__main__":
-    mission = "Créer un site web pour le client X avec une newsletter et un back-end automatisé."
-    print(team_leader.dispatch(mission))
-    print(team_leader.dispatch("Rédige une newsletter pour la campagne d'été"))
-    print(team_leader.dispatch("Développe un script d'automatisation pour les emails"))
+    # Exemple de mission
+    mission = "Rédige une newsletter pour le lancement du site web du client X. Le ton doit être dynamique et professionnel."
+    context = {}  # Ajoute ici des infos de contexte si besoin
+
+    # Mapping des rôles
+    agents = {
+        "chef": agent_claude,        # Chef de projet (Claude)
+        "reviewer": agent_gemini,    # Reviewer (Gemini)
+        "specialist": agent_openai   # Spécialiste (GPT-4o)
+    }
+
+    # Lance 5 itérations automatiques
+    multi_agent_iteration(mission, context, agents, n_iter=5)
