@@ -1,0 +1,31 @@
+# =======================
+# OpenManus Multi-LLM Config
+# =======================
+
+# === Claude 4 (Chef d'équipe) ===
+[llm_claude]
+model = "claude-3-7-sonnet-20250219"
+base_url = "https://api.anthropic.com/v1/"
+api_key = "${CLAUDE_API_KEY}"
+max_tokens = 8192
+temperature = 0.0
+
+# === Gemini 2.5 Pro (Contenu, multimodal) ===
+[llm_gemini]
+model = "google/gemini-pro"
+base_url = "https://generativelanguage.googleapis.com/v1beta/models"
+api_key = "${GEMINI_API_KEY}"
+max_tokens = 8192
+temperature = 0.0
+
+# === GPT-4o (Développement, automatisation) ===
+[llm_openai]
+model = "gpt-4o"
+base_url = "https://api.openai.com/v1"
+api_key = "${OPENAI_API_KEY}"
+max_tokens = 8192
+temperature = 0.0
+
+# === MCP (Model Context Protocol) configuration ===
+[mcp]
+server_reference = "app.mcp.server"
