@@ -1,41 +1,54 @@
-pydantic~=2.10.6
+# Core LLM & API
 openai~=1.66.3
-tenacity~=9.0.0
-pyyaml~=6.0.2
-loguru~=0.7.3
-numpy
-datasets~=3.4.1
-fastapi~=0.115.11
+httpx>=0.27.0
+requests~=2.32.3
 tiktoken~=0.9.0
 
-html2text~=2024.2.26
-gymnasium~=1.1.1
-pillow~=11.1.0
-browsergym~=0.13.3
+# Multi-agent orchestration & config
+fastapi~=0.115.11
 uvicorn~=0.34.0
-unidiff~=0.7.5
+toml>=0.10.2
+pyyaml~=6.0.2
+pydantic~=2.10.6
+pydantic_core~=2.27.2
+loguru~=0.7.3
+colorama~=0.4.6
+
+# Data, NLP, utils
+numpy
+datasets~=3.4.1
+html2text~=2024.2.26
+beautifulsoup4~=4.13.3
+
+# Vision, multimodal, browser automation
+pillow~=11.1.0
+playwright~=1.51.0
+browsergym~=0.13.3
 browser-use~=0.1.40
+
+# Search & crawling
 googlesearch-python~=1.3.0
 baidusearch~=1.0.3
 duckduckgo_search~=7.5.3
 
+# File & diff utils
 aiofiles~=24.1.0
-pydantic_core~=2.27.2
-colorama~=0.4.6
-playwright~=1.51.0
+unidiff~=0.7.5
 
+# Container & cloud
 docker~=7.1.0
-pytest~=8.3.5
-pytest-asyncio~=0.25.3
-
-mcp~=1.5.0
-httpx>=0.27.0
-tomli>=2.0.0
-
 boto3~=1.37.18
 
-requests~=2.32.3
-beautifulsoup4~=4.13.3
-
+# Huggingface & ML
 huggingface-hub~=0.29.2
+
+# Test & dev
+pytest~=8.3.5
+pytest-asyncio~=0.25.3
 setuptools~=75.8.0
+
+# Retry logic
+tenacity~=9.0.0
+
+# MCP (Model Context Protocol)
+mcp~=1.5.0
