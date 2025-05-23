@@ -1,13 +1,11 @@
-FROM python:3.12-slim
+FROM python:3.11-slim
 
-WORKDIR /app/OpenManus
+WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends git curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && (command -v uv >/dev/null 2>&1 || pip install --no-cache-dir uv)
+COPY . /app/
 
-COPY . .
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN uv pip install --system -r requirements.txt
+ENV PYTHONPATH=/app
 
-CMD ["bash"]
+CMD uvicorn app.api:app --host 0.0.0.0 --port 8000
