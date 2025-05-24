@@ -6,7 +6,7 @@ import os
 import re
 from typing import Optional, Dict, Any
 
-# Charge la configuration (adapte si nom différent)
+# Charge la configuration (chemin relatif à adapter si besoin)
 config = toml.load("config/config.toml")
 
 def mask_api_keys(text: str) -> str:
@@ -144,17 +144,12 @@ async def multi_agent_iteration(task: str, context: Dict[str, Any], agents: Dict
     """
     Orchestration principale avec fallback Gemini.
     """
-    print(f"Mission initiale : {task}\n")
     output = await agents["chef"].run(task, context)
-    print(f"Version 1 (Chef de projet) :\n{mask_api_keys(output)}\n")
     for i in range(2, n_iter + 1):
         critique_prompt = f"Voici la version actuelle : {output}\n\nPropose des améliorations concrètes ou corrige les erreurs. Sois constructif et précis."
         critique = await run_with_fallback_gemini(critique_prompt, context)
-        print(f"Feedback {i-1} (Reviewer) :\n{mask_api_keys(critique)}\n")
         improvement_prompt = f"Améliore ce livrable selon ces suggestions :\n\nLivrable actuel:\n{output}\n\nSuggestions:\n{critique}\n\nFournis la version améliorée complète."
         output = await agents["specialist"].run(improvement_prompt, context)
-        print(f"Version {i} (Spécialiste) :\n{mask_api_keys(output)}\n")
-    print("Livrable final :\n" + mask_api_keys(output))
     return mask_api_keys(output)
 
 async def run_orchestration(task: str, context: Optional[Dict[str, Any]] = None, n_iter: int = 3) -> Dict[str, Any]:
@@ -181,15 +176,5 @@ async def run_orchestration(task: str, context: Optional[Dict[str, Any]] = None,
             "result": None
         }
 
-if __name__ == "__main__":
-    async def test_orchestration():
-        mission = "Rédige une newsletter pour le lancement du site web du client TechCorp. Le ton doit être dynamique et professionnel."
-        context = {
-            "client": "TechCorp",
-            "product": "Site web e-commerce",
-            "target": "PME et startups",
-            "deadline": "Fin de semaine"
-        }
-        result = await run_orchestration(mission, context, n_iter=3)
-        print(f"Résultat final: {result}")
-    asyncio.run(test_orchestration())
+# À importer dans api.py :
+__all__ = ["run_orchestration"]
