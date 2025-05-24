@@ -29,6 +29,10 @@ class OrchestrationResponse(BaseModel):
     iterations: Optional[int] = None
     agents_used: Optional[list] = None
 
+# **NOUVEAU** : modèle pour run/simple
+class SimpleTaskRequest(BaseModel):
+    task: str
+
 @app.get("/")
 def root():
     return {
@@ -93,13 +97,14 @@ async def run_orchestration_endpoint(request: OrchestrationRequest):
             detail=f"Erreur interne lors de l'orchestration: {str(e)}"
         )
 
+# 🚀 VERSION MODERNE : task reçu dans le BODY (JSON) pour /run/simple
 @app.post("/run/simple")
-async def simple_orchestration(task: str):
+async def simple_orchestration(request: SimpleTaskRequest):
     """
-    Version simplifiée pour tests rapides
+    Version simplifiée pour tests rapides (paramètre dans le body JSON)
     """
     try:
-        result = await run_orchestration(task=task, n_iter=2)
+        result = await run_orchestration(task=request.task, n_iter=2)
         return {"result": result["result"] if result["success"] else result["error"]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
