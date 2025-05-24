@@ -6,7 +6,7 @@ import os
 import re
 
 # Import orchestrateur (adapté à ton arborescence)
-from config.multi_agent_orchestrator import run_orchestration, call_agent_with_fallback, gemini_agent, gpt_agent
+from config.multi_agent_orchestrator import run_orchestration
 
 app = FastAPI(
     title="OpenManus Multi-Agent API",
