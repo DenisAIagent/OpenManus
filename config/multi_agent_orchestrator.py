@@ -1,7 +1,7 @@
 import toml
 
 # Charge la configuration
-config = toml.load("config/config.multi-llm.toml")
+config = toml.load("config/config.toml")
 
 # Classe agent générique (à adapter pour les vrais appels API)
 class AgentLLM:
