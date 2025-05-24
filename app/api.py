@@ -2,9 +2,11 @@ from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 import logging
+import os
+import re
 
-# Import de votre orchestrateur
-from config.multi_agent_orchestrator import run_orchestration
+# Import orchestrateur (adapté à ton arborescence)
+from config.multi_agent_orchestrator import run_orchestration, call_agent_with_fallback, gemini_agent, gpt_agent
 
 app = FastAPI(
     title="OpenManus Multi-Agent API",
@@ -12,11 +14,23 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configuration du logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Modèle de données pour les requêtes
+# --- Masquage des clés API ---
+def mask_api_keys(text: str) -> str:
+    api_keys = [
+        os.environ.get("GEMINI_API_KEY", ""),
+        os.environ.get("OPENAI_API_KEY", ""),
+        os.environ.get("CLAUDE_API_KEY", ""),
+    ]
+    for key in api_keys:
+        if key:
+            text = text.replace(key, "****REDACTED_API_KEY****")
+    text = re.sub(r'key=[A-Za-z0-9_\-]+', 'key=****REDACTED_API_KEY****', text)
+    return text
+
+# --- Modèles de données ---
 class OrchestrationRequest(BaseModel):
     task: str
     context: Optional[Dict[str, Any]] = None
@@ -29,9 +43,10 @@ class OrchestrationResponse(BaseModel):
     iterations: Optional[int] = None
     agents_used: Optional[list] = None
 
-# **NOUVEAU** : modèle pour run/simple
 class SimpleTaskRequest(BaseModel):
     task: str
+
+# --- Endpoints ---
 
 @app.get("/")
 def root():
@@ -40,6 +55,7 @@ def root():
         "status": "active",
         "endpoints": {
             "orchestration": "/run",
+            "simple": "/run/simple",
             "health": "/health"
         }
     }
@@ -54,62 +70,52 @@ def health_check():
 
 @app.post("/run", response_model=OrchestrationResponse)
 async def run_orchestration_endpoint(request: OrchestrationRequest):
-    """
-    Lance une orchestration multi-agents
-    
-    - **task**: La tâche à accomplir (obligatoire)
-    - **context**: Contexte additionnel pour les agents (optionnel)
-    - **iterations**: Nombre d'itérations (défaut: 3)
-    """
     try:
-        logger.info(f"Nouvelle requête d'orchestration: {request.task[:100]}...")
-        
-        # Validation de base
+        logger.info(f"Nouvelle requête d'orchestration: {mask_api_keys(request.task[:100])}...")
         if not request.task or len(request.task.strip()) < 10:
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail="La tâche doit contenir au moins 10 caractères"
             )
-        
         if request.iterations and (request.iterations < 1 or request.iterations > 10):
             raise HTTPException(
                 status_code=400,
                 detail="Le nombre d'itérations doit être entre 1 et 10"
             )
-        
-        # Lance l'orchestration
+        # Utilise le fallback Gemini→GPT dans l'orchestration si besoin
         result = await run_orchestration(
             task=request.task,
             context=request.context,
             n_iter=request.iterations or 3
         )
-        
         logger.info(f"Orchestration terminée avec succès: {result['success']}")
-        
+        # Masque les clés dans la réponse finale aussi
+        result["result"] = mask_api_keys(result.get("result", ""))
+        result["error"] = mask_api_keys(result.get("error", "")) if result.get("error") else None
         return OrchestrationResponse(**result)
-        
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Erreur lors de l'orchestration: {str(e)}")
+        error_message = mask_api_keys(str(e))
+        logger.error(f"Erreur lors de l'orchestration: {error_message}")
         raise HTTPException(
             status_code=500,
-            detail=f"Erreur interne lors de l'orchestration: {str(e)}"
+            detail=f"Erreur interne lors de l'orchestration: {error_message}"
         )
 
-# 🚀 VERSION MODERNE : task reçu dans le BODY (JSON) pour /run/simple
 @app.post("/run/simple")
 async def simple_orchestration(request: SimpleTaskRequest):
     """
     Version simplifiée pour tests rapides (paramètre dans le body JSON)
     """
     try:
-        result = await run_orchestration(task=request.task, n_iter=2)
-        return {"result": result["result"] if result["success"] else result["error"]}
+        # Utilise le fallback Gemini→GPT aussi pour ce mode simple !
+        result = await call_agent_with_fallback(gemini_agent, gpt_agent, task=request.task, n_iter=2)
+        return {"result": mask_api_keys(result["result"] if result["success"] else result["error"])}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_message = mask_api_keys(str(e))
+        raise HTTPException(status_code=500, detail=error_message)
 
-# Middleware pour logging
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     logger.info(f"Requête reçue: {request.method} {request.url}")
